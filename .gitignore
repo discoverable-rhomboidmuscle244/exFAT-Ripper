@@ -1,0 +1,9 @@
+dist/
+build/
+__pycache__/
+core/__pycache__/
+*.pyc
+*.log
+exfat_games.json
+ps5_games.json
+backups/
