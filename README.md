@@ -1,10 +1,15 @@
-# exFAT Ripper v2.7
+# exFAT Ripper v2.8
 
 A premium Windows desktop launcher for the PS5 exFAT library. Browse cover art, PPSA codes, titles, versions and download links — and scrape or update the library in the background while you browse.
 
 Built with pywebview (Python backend + HTML/CSS/JS frontend). Dark gaming-launcher aesthetic: custom frameless titlebar, animated sidebar, cover-art grid, cinematic detail panel.
 
 ---
+
+## What's new in v2.8
+
+- **Fixed window dragging** — the frameless titlebar can now be moved around the screen. Previously only the minimise/maximise/close buttons worked. Drag anywhere on the titlebar (except the buttons); double-click to maximise/restore.
+- Offline-safe font fallbacks (Segoe UI / Consolas) so the UI renders correctly even if Google Fonts can't load.
 
 ## What's new in v2.7
 

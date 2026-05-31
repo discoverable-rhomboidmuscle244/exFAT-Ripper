@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-app.py  —  exFAT Ripper v2.0
+app.py  —  exFAT Ripper v2.8
 -----------------------------
 Desktop app (pywebview) for browsing and managing the PS5 exFAT game library.
 
@@ -721,6 +721,23 @@ class Api:
         except Exception:
             pass
 
+    def win_move(self, dx: int, dy: int) -> None:
+        """JS-driven window drag. Moves the window by (dx, dy) pixels from its
+        current position. This is the primary drag mechanism — the custom
+        frameless titlebar has no OS drag handle, so the UI calls this on
+        titlebar mouse-drag."""
+        try:
+            if not self._window:
+                return
+            # pywebview 5+ exposes .x / .y; guard for safety.
+            x = getattr(self._window, "x", None)
+            y = getattr(self._window, "y", None)
+            if x is None or y is None:
+                return
+            self._window.move(int(x) + int(dx), int(y) + int(dy))
+        except Exception:
+            pass
+
     # ------------------------------------------------------------------
     # Misc
     # ------------------------------------------------------------------
@@ -739,7 +756,7 @@ class Api:
             return {"ok": False, "error": str(e)}
 
     def get_version(self) -> dict:
-        return {"ok": True, "version": "2.0.0"}
+        return {"ok": True, "version": "2.8.0"}
 
 
 # ---------------------------------------------------------------------------
