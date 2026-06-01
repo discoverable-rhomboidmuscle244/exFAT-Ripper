@@ -23,6 +23,11 @@ from pathlib import Path
 
 import webview
 
+# On Linux, force the Qt webview backend — the default GTK/WebKit backend is
+# unreliable. Windows (EdgeChromium) and macOS (Cocoa) are left untouched.
+if sys.platform.startswith("linux"):
+    os.environ["PYWEBVIEW_GUI"] = "qt"
+
 from core.scraper import scrape_library, SITE_PASSWORD
 from core.decrypt import resolve_game_links
 from core.cover_cache import ensure_cover, repair_missing, bulk_cache_covers

@@ -192,3 +192,7 @@ run_app.bat                   run without building
 Special thanks to **pippo26442999** — creator and maintainer of the PS5 exFAT library. Without pippo's work there would be nothing to scrape.
 
 Built by [kerrdec97](https://github.com/kerrdec97) · [Discord](https://discord.gg/qFJw7pcpX) · [Ko-fi](https://ko-fi.com/deckerr9746220)
+
+### Contributors
+
+- **Linux support** (AppImage build, Qt backend) — [Nazky](https://github.com/Nazky)

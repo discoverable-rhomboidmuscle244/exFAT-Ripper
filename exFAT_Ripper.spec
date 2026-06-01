@@ -2,46 +2,65 @@
 #
 # PyInstaller spec for PS5 exFAT Library.
 # Build with:  pyinstaller PS5_exFAT_Library.spec
-# or just run build_exe.bat which does everything.
+# or run the platform-specific build script.
 
+import sys
 import os
+from pathlib import Path
 
 block_cipher = None
 
-# Bundle the UI folder so index.html ships inside the exe.
+# ── Platform detection ─────────────────────────────────────────────────────
+IS_WIN = sys.platform == 'win32'
+IS_MAC = sys.platform == 'darwin'
+IS_LINUX = sys.platform.startswith('linux')
+
+# ── Data files ─────────────────────────────────────────────────────────────
 datas = [
     ('ui', 'ui'),
     ('core/dlpsgame_ps5_scraper.py', 'core'),
     ('app.png', '.'),
 ]
 
-# pywebview + cryptography sometimes need hidden imports spelled out.
-# pywebview on Windows uses the Edge WebView2 (edgechromium) backend via
-# .NET / clr_loader — PyInstaller frequently misses these.
+# ── Hidden imports ─────────────────────────────────────────────────────────
 hiddenimports = [
-    'webview'
-    'webview.platforms.winforms'
-    'webview.platforms.edgechromium'
-    'clr_loader'
-    'clr_loader.netfx'
-    'clr_loader.util'
-    'cryptography'
-    'cryptography.hazmat.primitives.kdf.pbkdf2'
-    'cryptography.hazmat.primitives.ciphers.aead'
-    'cryptography.hazmat.primitives.hashes'
-    'cryptography.hazmat.backends.openssl'
-    'cloudscraper'
-    'bs4'
-    'requests'
+    'webview',
+    'webview.platforms.qt',
+    'cloudscraper',
+    'bs4',
+    'requests',
+    'cryptography',
+    'cryptography.hazmat.primitives.kdf.pbkdf2',
+    'cryptography.hazmat.primitives.ciphers.aead',
+    'cryptography.hazmat.primitives.hashes',
+    'cryptography.hazmat.backends.openssl',
 ]
 
-# Pull in all of pywebview's data/submodules so the winforms/edge backend
-# and its bundled assets ship intact.
+# Platform-specific webview backends
+if IS_WIN:
+    hiddenimports += [
+        'webview.platforms.winforms',
+        'webview.platforms.edgechromium',
+        'clr_loader',
+        'clr_loader.netfx',
+        'clr_loader.util',
+    ]
+elif IS_MAC:
+    hiddenimports += [
+        'webview.platforms.cocoa',
+    ]
+elif IS_LINUX:
+    hiddenimports += [
+        'webview.platforms.gtk',
+        'webview.platforms.qt',
+    ]
+
+# ── Collect all webview + cloudscraper data ────────────────────────────────
 from PyInstaller.utils.hooks import collect_all
+
 _pw_datas, _pw_binaries, _pw_hidden = collect_all('webview')
 hiddenimports += _pw_hidden
 
-# cloudscraper ships JS-challenge data files it needs at runtime.
 try:
     _cs_datas, _cs_binaries, _cs_hidden = collect_all('cloudscraper')
     _pw_datas += _cs_datas
@@ -50,24 +69,23 @@ try:
 except Exception:
     pass
 
-# --- Bundle the Playwright Chromium browser ----------------------------------
-# So the .exe is self-contained and works on a PC where `playwright install`
-# was never run. We copy the ms-playwright browsers folder in as data, and a
-# runtime hook (see runtime_hook_playwright.py) points Playwright at it.
-import os as _os
-from pathlib import Path as _Path
-
+# ── Bundle Playwright Chromium browsers ────────────────────────────────────
 def _find_playwright_browsers():
-    # Standard install locations for `playwright install chromium`.
-    env = _os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    env = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
     cands = []
     if env:
-        cands.append(_Path(env))
-    local = _os.environ.get("LOCALAPPDATA")
-    if local:
-        cands.append(_Path(local) / "ms-playwright")
-    cands.append(_Path.home() / ".cache" / "ms-playwright")
-    cands.append(_Path("/opt/pw-browsers"))
+        cands.append(Path(env))
+    if IS_WIN:
+        local = os.environ.get("LOCALAPPDATA")
+        if local:
+            cands.append(Path(local) / "ms-playwright")
+    elif IS_MAC:
+        cands.append(Path.home() / "Library" / "Caches" / "ms-playwright")
+    else:  # Linux
+        cands.append(Path.home() / ".cache" / "ms-playwright")
+        cands.append(Path("/opt/pw-browsers"))
+        cands.append(Path("/usr/local/share/ms-playwright"))
+    
     for c in cands:
         if c and c.is_dir():
             return c
@@ -75,16 +93,16 @@ def _find_playwright_browsers():
 
 _pw_browsers = _find_playwright_browsers()
 if _pw_browsers:
-    # Bundle every browser folder under a known name inside the exe.
     for _child in _pw_browsers.iterdir():
         if _child.is_dir():
             _pw_datas.append((str(_child), f"ms-playwright/{_child.name}"))
     print(f"[spec] bundling Playwright browsers from: {_pw_browsers}")
 else:
-    print("[spec] WARNING: no ms-playwright folder found — the exe will rely "
+    print("[spec] WARNING: no ms-playwright folder found — the app will rely "
           "on a system Chromium or an attached Brave. Run "
-          "'playwright install chromium' before building for a self-contained exe.")
+          "'playwright install chromium' before building for a self-contained app.")
 
+# ── Analysis ───────────────────────────────────────────────────────────────
 a = Analysis(
     ["app.py"],
     pathex=[],
@@ -103,25 +121,98 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    [],
-    name="exFAT Ripper",
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon="app.ico" if os.path.exists("app.ico") else None,
-)
+# ── Platform-specific build output ─────────────────────────────────────────
+if IS_WIN:
+    # ── Windows: single .exe ─────────────────────────────────────────────
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        [],
+        name="exFAT Ripper",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        runtime_tmpdir=None,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        icon="app.ico" if os.path.exists("app.ico") else None,
+    )
+
+elif IS_MAC:
+    # ── macOS: .app bundle ───────────────────────────────────────────────
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name="exFAT Ripper",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=True,  # Required for macOS app bundles
+        target_arch='universal2',  # Supports both Intel & Apple Silicon
+        codesign_identity=None,
+        entitlements_file=None,
+        icon="app.icns" if os.path.exists("app.icns") else ("app.png" if os.path.exists("app.png") else None),
+    )
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        name="exFAT Ripper"
+    )
+    app = BUNDLE(
+        coll,
+        name="exFAT Ripper.app",
+        icon="app.icns" if os.path.exists("app.icns") else ("app.png" if os.path.exists("app.png") else None),
+        bundle_identifier="com.yourname.exfat-ripper",
+        info_plist={
+            'CFBundleDisplayName': 'exFAT Ripper',
+            'CFBundleShortVersionString': '1.0.0',
+            'CFBundleVersion': '1.0.0',
+            'LSMinimumSystemVersion': '10.14',
+            'NSHighResolutionCapable': 'True',
+            'NSRequiresAquaSystemAppearance': 'False',
+        },
+    )
+
+else:
+    # ── Linux: single binary ─────────────────────────────────────────────
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        [],
+        name="exFAT Ripper",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=True,  # Strip debug symbols on Linux to reduce size
+        upx=True,
+        upx_exclude=[],
+        runtime_tmpdir=None,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        icon="app.png" if os.path.exists("app.png") else None,
+    )
